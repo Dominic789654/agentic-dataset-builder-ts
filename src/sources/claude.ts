@@ -1,15 +1,13 @@
 import fg from 'fast-glob';
-import { z } from 'zod';
 import { Qwen35RecordSchema, type Qwen35Record } from '../schemas/qwen35.js';
+import { ClaudeProjectEntrySchema } from '../schemas/source.js';
 import { readJsonl } from '../utils/jsonl.js';
-
-const EntrySchema = z.record(z.string(), z.unknown());
 
 export async function collectClaudePromptOnlyRecords(root: string): Promise<Qwen35Record[]> {
   const files = await fg('**/*.jsonl', { cwd: root, absolute: true, onlyFiles: true });
   const records: Qwen35Record[] = [];
   for (const file of files.sort()) {
-    const entries = (await readJsonl(file)).map((row) => EntrySchema.parse(row));
+    const entries = (await readJsonl(file)).map((row) => ClaudeProjectEntrySchema.parse(row));
     for (const entry of entries) {
       if (entry.type !== 'user') continue;
       const message = isRecord(entry.message) ? entry.message : {};

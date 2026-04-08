@@ -1,33 +1,25 @@
 import fs from 'node:fs';
 import fg from 'fast-glob';
-import { z } from 'zod';
 import { Qwen35RecordSchema, type Qwen35Record } from '../schemas/qwen35.js';
+import { PiSessionEntrySchema, PiSessionHeaderSchema, type PiSessionEntry } from '../schemas/source.js';
 import { isFile } from '../utils/common.js';
 import { readJsonl } from '../utils/jsonl.js';
-
-const SessionEntrySchema = z.object({
-  type: z.string(),
-  id: z.string().optional(),
-  parentId: z.string().nullable().optional(),
-  timestamp: z.string().optional(),
-}).passthrough();
-
-type SessionEntry = z.infer<typeof SessionEntrySchema>;
 
 export async function collectPiRecords(root: string): Promise<Qwen35Record[]> {
   const files = await fg('**/*.jsonl', { cwd: root, absolute: true, onlyFiles: true });
   const records: Qwen35Record[] = [];
   for (const file of files.sort()) {
-    const rows = (await readJsonl(file)).map((row) => SessionEntrySchema.parse(row));
+    const rawRows = await readJsonl(file);
+    const rows = rawRows.map((row, index) => (index === 0 ? PiSessionHeaderSchema.parse(row) : PiSessionEntrySchema.parse(row)));
     if (!rows.length) continue;
     const header = rows[0] as Record<string, unknown>;
     const body = rows.slice(1);
-    const byId = new Map<string, SessionEntry>();
+    const byId = new Map<string, PiSessionEntry>();
     const children = new Map<string | null, string[]>();
     for (const entry of body) {
       if (!entry.id) continue;
       byId.set(entry.id, entry);
-      const key = entry.parentId ?? null;
+      const key = typeof entry.parentId === 'string' ? entry.parentId : null;
       const bucket = children.get(key) ?? [];
       bucket.push(entry.id);
       children.set(key, bucket);
@@ -42,19 +34,19 @@ export async function collectPiRecords(root: string): Promise<Qwen35Record[]> {
   return records;
 }
 
-function branchEntries(leaf: string, byId: Map<string, SessionEntry>): SessionEntry[] {
-  const ordered: SessionEntry[] = [];
+function branchEntries(leaf: string, byId: Map<string, PiSessionEntry>): PiSessionEntry[] {
+  const ordered: PiSessionEntry[] = [];
   let current: string | null = leaf;
   while (current) {
     const entry = byId.get(current);
     if (!entry) break;
     ordered.push(entry);
-    current = entry.parentId ?? null;
+    current = typeof entry.parentId === 'string' ? entry.parentId : null;
   }
   return ordered.reverse();
 }
 
-function buildPiRecord(entries: SessionEntry[], header: Record<string, unknown>, sourceFile: string, branched: boolean): Qwen35Record {
+function buildPiRecord(entries: PiSessionEntry[], header: Record<string, unknown>, sourceFile: string, branched: boolean): Qwen35Record {
   const messages: any[] = [];
   const tools = new Map<string, { name: string }>();
   const lossyReasons = new Set<string>();

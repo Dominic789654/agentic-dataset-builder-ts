@@ -37,7 +37,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "check": "tsc -p tsconfig.json --noEmit",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "test": "vitest run"
   },
   "dependencies": {
     "fast-glob": "^3.3.3",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@types/node": "^24.7.2",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.3"
   }
 }

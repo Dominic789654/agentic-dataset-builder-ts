@@ -1,15 +1,7 @@
 import fg from 'fast-glob';
-import { z } from 'zod';
 import { Qwen35RecordSchema, type Qwen35Record } from '../schemas/qwen35.js';
+import { CodexEntrySchema, type CodexEntry } from '../schemas/source.js';
 import { readJsonl } from '../utils/jsonl.js';
-
-const EntrySchema = z.object({
-  timestamp: z.string().optional(),
-  type: z.string(),
-  payload: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
-
-type Entry = z.infer<typeof EntrySchema>;
 
 class TurnBuilder {
   sessionMeta: Record<string, unknown>;
@@ -32,7 +24,7 @@ class TurnBuilder {
     this.lastTs = startTs;
   }
 
-  ingest(entry: Entry) {
+  ingest(entry: CodexEntry) {
     this.lastTs = entry.timestamp ?? this.lastTs;
     const payload = (entry.payload ?? {}) as Record<string, unknown>;
     if (entry.type === 'response_item') this.ingestResponseItem(payload);
@@ -199,7 +191,7 @@ export async function collectCodexRecords(root: string): Promise<Qwen35Record[]>
   const files = await fg('**/*.jsonl', { cwd: root, absolute: true, onlyFiles: true });
   const records: Qwen35Record[] = [];
   for (const file of files.sort()) {
-    const entries = (await readJsonl(file)).map((entry) => EntrySchema.parse(entry));
+    const entries = (await readJsonl(file)).map((entry) => CodexEntrySchema.parse(entry));
     const sessionMeta = ((entries.find((entry) => entry.type === 'session_meta')?.payload ?? {}) as Record<string, unknown>);
     let builder: TurnBuilder | null = null;
     for (const entry of entries) {
