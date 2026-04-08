@@ -1,0 +1,52 @@
+{
+  "name": "agentic-dataset-builder",
+  "version": "0.2.0",
+  "description": "Pure TypeScript agentic dataset builder for Pi, Codex, and Claude Code history",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://github.com/Dominic789654/agentic-dataset-builder",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dominic789654/agentic-dataset-builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dominic789654/agentic-dataset-builder/issues"
+  },
+  "keywords": [
+    "agentic",
+    "dataset",
+    "pi",
+    "codex",
+    "claude",
+    "qwen",
+    "zod",
+    "parquet"
+  ],
+  "bin": {
+    "agentic-dataset-builder": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "pack:check": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "parquetjs-lite": "^0.8.7",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
