@@ -21,6 +21,11 @@ If the package is published on npm:
 npx --registry=https://registry.npmjs.org/ agentic-dataset-builder@0.2.4 --output-root ./out
 ```
 
+Default behavior now includes:
+
+- sources: `pi,codex,claude`
+- labels kept: `cot_eligible,agent_only,prompt_only`
+
 If working from this repo locally:
 
 ```bash
@@ -76,7 +81,13 @@ Files:
 
 ## Recommended commands
 
-Pi + Codex:
+Pi + Codex + Claude prompt-only (default):
+
+```bash
+node dist/cli.js --output-root ./out
+```
+
+Pi + Codex only:
 
 ```bash
 node dist/cli.js --output-root ./out --include-sources pi,codex --include-labels cot_eligible,agent_only
@@ -146,6 +157,10 @@ npm run check
 npm run test
 npm run build
 ```
+
+Claude Code / AI assistant contributors should also read:
+
+- [`docs/claude-code-development.md`](docs/claude-code-development.md)
 
 This repo currently includes:
 
