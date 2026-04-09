@@ -3,6 +3,7 @@ dist/
 out/
 out-pi/
 *.tgz
+ai-slop-report.json
 out-*/
 __pycache__/
 *.pyc
