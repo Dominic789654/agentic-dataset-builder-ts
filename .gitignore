@@ -4,3 +4,5 @@ out/
 out-pi/
 *.tgz
 out-*/
+__pycache__/
+*.pyc
