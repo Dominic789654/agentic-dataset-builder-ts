@@ -196,6 +196,87 @@ describe('collectClaudePromptOnlyRecords', () => {
     expect(records[0].meta.lossy_reasons).not.toContain('subagents_not_inlined');
   });
 
+
+  it('does not silently claim unrelated sidecar payloads', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-history-'));
+    const file = path.join(dir, 'sample.jsonl');
+    const sessionDir = path.join(dir, 'sample');
+    const toolResultsDir = path.join(sessionDir, 'tool-results');
+    fs.mkdirSync(toolResultsDir, { recursive: true });
+    fs.writeFileSync(path.join(toolResultsDir, 'unrelated.txt'), 'orphan sidecar', 'utf8');
+    fs.writeFileSync(
+      file,
+      [
+        JSON.stringify({ type: 'system', subtype: 'init', sessionId: 's5', timestamp: '2026-01-01T00:00:00Z', model: 'claude-test' }),
+        JSON.stringify({ type: 'user', sessionId: 's5', timestamp: '2026-01-01T00:00:01Z', message: { role: 'user', content: 'hello' } }),
+        JSON.stringify({
+          type: 'assistant',
+          sessionId: 's5',
+          timestamp: '2026-01-01T00:00:02Z',
+          message: {
+            role: 'assistant',
+            content: [{ type: 'tool_use', id: 'toolu_missing', name: 'Read', input: { file_path: 'README.md' } }],
+          },
+        }),
+      ].join('\n') + '\n',
+      'utf8',
+    );
+
+    const records = await collectClaudePromptOnlyRecords(dir);
+    expect(records).toHaveLength(1);
+    expect(records[0].messages.some((message) => message.role === 'tool')).toBe(false);
+    expect(records[0].meta.lossy_reasons).toContain('missing_tool_results');
+  });
+
+  it('falls back to side-file subagents only when inline agent ids have no usable transcript messages', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-history-'));
+    const file = path.join(dir, 'sample.jsonl');
+    const sessionDir = path.join(dir, 'sample');
+    const subagentsDir = path.join(sessionDir, 'subagents');
+    fs.mkdirSync(subagentsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(subagentsDir, 'agent-a1.jsonl'),
+      [
+        JSON.stringify({ type: 'user', sessionId: 'sub1', timestamp: '2026-01-01T00:00:03Z', message: { role: 'user', content: 'sub task' } }),
+        JSON.stringify({ type: 'assistant', sessionId: 'sub1', timestamp: '2026-01-01T00:00:04Z', message: { role: 'assistant', content: [{ type: 'text', text: 'sub answer' }] } }),
+      ].join('\n') + '\n',
+      'utf8',
+    );
+    fs.writeFileSync(
+      file,
+      [
+        JSON.stringify({ type: 'system', subtype: 'init', sessionId: 's6', timestamp: '2026-01-01T00:00:00Z', model: 'claude-test' }),
+        JSON.stringify({ type: 'user', sessionId: 's6', timestamp: '2026-01-01T00:00:01Z', message: { role: 'user', content: 'hello' } }),
+        JSON.stringify({
+          type: 'assistant',
+          sessionId: 's6',
+          timestamp: '2026-01-01T00:00:02Z',
+          message: {
+            role: 'assistant',
+            content: [{ type: 'tool_use', id: 'toolu_task', name: 'Task', input: { description: 'do subtask' } }],
+          },
+        }),
+        JSON.stringify({
+          type: 'progress',
+          agentId: 'a1',
+          data: {
+            message: {
+              type: 'file-history-snapshot',
+              snapshot: { timestamp: '2026-01-01T00:00:03Z' },
+            },
+          },
+        }),
+      ].join('\n') + '\n',
+      'utf8',
+    );
+
+    const records = await collectClaudePromptOnlyRecords(dir);
+    expect(records).toHaveLength(1);
+    const textMessages = records[0].messages.map((message) => ({ role: message.role, content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content) }));
+    expect(textMessages.some((message) => message.content.includes('[subagent:a1]\nsub task'))).toBe(true);
+    expect(records[0].meta.lossy_reasons).toContain('subagents_appended_from_side_files');
+  });
+
   it('prefers inline progress subagent messages with explicit agent ids', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-history-'));
     const file = path.join(dir, 'sample.jsonl');

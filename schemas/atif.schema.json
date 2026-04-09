@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-dataset-builder.local/schemas/atif.schema.json",
+  "title": "ATIF Trajectory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "agent", "steps"],
+  "properties": {
+    "schema_version": { "type": "string", "default": "ATIF-v1.4" },
+    "session_id": { "type": "string" },
+    "agent": { "$ref": "#/$defs/Agent" },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Step" }
+    },
+    "final_metrics": { "$ref": "#/$defs/FinalMetrics" },
+    "extra": { "$ref": "#/$defs/JsonObject" }
+  },
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" },
+        { "type": "array", "items": { "$ref": "#/$defs/JsonValue" } },
+        { "$ref": "#/$defs/JsonObject" }
+      ]
+    },
+    "JsonObject": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/JsonValue" }
+    },
+    "ToolCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_call_id", "function_name", "arguments"],
+      "properties": {
+        "tool_call_id": { "type": "string" },
+        "function_name": { "type": "string" },
+        "arguments": { "$ref": "#/$defs/JsonObject" },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "ObservationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_call_id"],
+      "properties": {
+        "source_call_id": { "type": "string" },
+        "content": { "type": ["string", "null"] },
+        "subagent_trajectory_ref": { "type": ["string", "null"] },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "Observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ObservationResult" },
+          "default": []
+        },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "Metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": { "type": "integer", "minimum": 0 },
+        "completion_tokens": { "type": "integer", "minimum": 0 },
+        "cached_tokens": { "type": "integer", "minimum": 0 },
+        "cost_usd": { "type": "number", "minimum": 0 },
+        "logprobs": { "type": "array", "items": { "type": "number" } },
+        "prompt_token_ids": { "type": "array", "items": { "type": "integer" } },
+        "completion_token_ids": { "type": "array", "items": { "type": "integer" } },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "Step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "source"],
+      "properties": {
+        "step_id": { "type": "integer", "minimum": 1 },
+        "timestamp": { "type": "string" },
+        "source": { "enum": ["system", "user", "agent"] },
+        "message": { "type": "string" },
+        "reasoning_content": { "type": "string" },
+        "model_name": { "type": "string" },
+        "tool_calls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ToolCall" }
+        },
+        "observation": { "$ref": "#/$defs/Observation" },
+        "metrics": { "$ref": "#/$defs/Metrics" },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "Agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "model_name": { "type": "string" },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "FinalMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_steps"],
+      "properties": {
+        "total_prompt_tokens": { "type": "integer", "minimum": 0 },
+        "total_completion_tokens": { "type": "integer", "minimum": 0 },
+        "total_cached_tokens": { "type": "integer", "minimum": 0 },
+        "total_cost_usd": { "type": "number", "minimum": 0 },
+        "total_steps": { "type": "integer", "minimum": 1 },
+        "extra": { "$ref": "#/$defs/JsonObject" }
+      }
+    }
+  }
+}

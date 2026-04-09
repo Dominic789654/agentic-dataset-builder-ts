@@ -43,6 +43,12 @@ export const Qwen35ToolSpecSchema = z.object({
   parameters: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const Qwen35RoundtripSchema = z.object({
+  version: z.literal('agentic-dataset-builder/roundtrip-v1'),
+  canonical_source: z.enum(['atif', 'qwen35-record', 'derived']),
+  atif_trajectory_json: z.string().optional(),
+});
+
 export const Qwen35MessageSchema = z.discriminatedUnion('role', [
   z.object({ role: z.literal('system'), content: Qwen35ContentSchema }),
   z.object({ role: z.literal('user'), content: Qwen35ContentSchema }),
@@ -98,6 +104,7 @@ export const Qwen35MetaSchema = z.object({
   dataset_source_file: z.string().optional(),
   dataset_has_reasoning: z.boolean().optional(),
   dataset_reasoning_chars: z.number().int().nonnegative().optional(),
+  roundtrip: Qwen35RoundtripSchema.optional(),
 });
 
 export const Qwen35RecordSchema = z.object({

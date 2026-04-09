@@ -110,7 +110,7 @@ function buildClaudeSessionRecord(entries: ClaudeProjectEntry[], file: string): 
   let responseVideoBlockCount = 0;
   let assistantCount = 0;
   let seenNonSystem = false;
-  const loadedSubagentIds = new Set(metadata.inlineSubagentIds);
+  const loadedSubagentIds = new Set<string>();
 
   for (const envelope of envelopes) {
     if (envelope.isMeta === true) continue;
@@ -602,11 +602,6 @@ function claimMatchingSubagentArtifact(input: Record<string, unknown>, artifacts
       return fuzzy;
     }
   }
-  const fallback = artifacts.find((artifact) => !artifact.claimed);
-  if (fallback) {
-    fallback.claimed = true;
-    return fallback;
-  }
   return undefined;
 }
 
@@ -629,10 +624,6 @@ function claimSidecarByToolUseId(store: SidecarStore, toolUseId: string): Qwen35
   if (direct) {
     store.directByPrefix.delete(direct[0]);
     return direct[1];
-  }
-  if (store.unclaimed.length === 1 && !store.unclaimed[0].claimed) {
-    store.unclaimed[0].claimed = true;
-    return store.unclaimed[0].content;
   }
   return undefined;
 }

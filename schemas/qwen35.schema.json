@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-dataset-builder.local/schemas/qwen35.schema.json",
+  "title": "Qwen35 Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "messages", "tools", "meta"],
+  "properties": {
+    "id": { "type": "string" },
+    "request_id": { "type": "string" },
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "contains": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": { "const": "user" }
+        }
+      },
+      "items": { "$ref": "#/$defs/Message" }
+    },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ToolSpec" },
+      "default": []
+    },
+    "meta": { "$ref": "#/$defs/Meta" },
+    "label": { "type": "string" },
+    "source_system": { "type": "string" },
+    "source_bucket": { "type": "string" },
+    "source_file": { "type": "string" },
+    "agentic_label": { "$ref": "#/$defs/AgenticLabel" }
+  },
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" },
+        { "type": "array", "items": { "$ref": "#/$defs/JsonValue" } },
+        { "$ref": "#/$defs/JsonObject" }
+      ]
+    },
+    "JsonObject": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/JsonValue" }
+    },
+    "TextBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {
+        "type": { "const": "text" },
+        "text": { "type": "string" }
+      }
+    },
+    "ImageBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "image" },
+        "image_url": { "type": "string" },
+        "placeholder": { "type": "boolean" },
+        "placeholder_token": { "type": "string" },
+        "source_kind": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "VideoBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "video" },
+        "video_url": { "type": "string" },
+        "placeholder": { "type": "boolean" },
+        "placeholder_token": { "type": "string" },
+        "source_kind": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "Content": {
+      "anyOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/TextBlock" },
+              { "$ref": "#/$defs/ImageBlock" },
+              { "$ref": "#/$defs/VideoBlock" }
+            ]
+          }
+        }
+      ]
+    },
+    "ToolFunction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "arguments"],
+      "properties": {
+        "name": { "type": "string" },
+        "arguments": { "$ref": "#/$defs/JsonObject", "default": {} }
+      }
+    },
+    "ToolCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "function"],
+      "properties": {
+        "type": { "const": "function", "default": "function" },
+        "id": { "type": "string" },
+        "function": { "$ref": "#/$defs/ToolFunction" }
+      }
+    },
+    "ToolSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "parameters": { "$ref": "#/$defs/JsonObject" }
+      }
+    },
+    "Roundtrip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "canonical_source"],
+      "properties": {
+        "version": { "const": "agentic-dataset-builder/roundtrip-v1" },
+        "canonical_source": { "enum": ["atif", "qwen35-record", "derived"] },
+        "atif_trajectory_json": { "type": "string" }
+      }
+    },
+    "SystemMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "content"],
+      "properties": {
+        "role": { "const": "system" },
+        "content": { "$ref": "#/$defs/Content" }
+      }
+    },
+    "UserMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "content"],
+      "properties": {
+        "role": { "const": "user" },
+        "content": { "$ref": "#/$defs/Content" }
+      }
+    },
+    "AssistantMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "content"],
+      "properties": {
+        "role": { "const": "assistant" },
+        "content": { "$ref": "#/$defs/Content" },
+        "reasoning_content": {
+          "type": "string",
+          "allOf": [
+            { "not": { "pattern": "<think>" } },
+            { "not": { "pattern": "</think>" } }
+          ]
+        },
+        "tool_calls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ToolCall" }
+        }
+      }
+    },
+    "ToolMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "content"],
+      "properties": {
+        "role": { "const": "tool" },
+        "content": { "$ref": "#/$defs/Content" },
+        "tool_call_id": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "Message": {
+      "oneOf": [
+        { "$ref": "#/$defs/SystemMessage" },
+        { "$ref": "#/$defs/UserMessage" },
+        { "$ref": "#/$defs/AssistantMessage" },
+        { "$ref": "#/$defs/ToolMessage" }
+      ]
+    },
+    "Meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "endpoint",
+        "status",
+        "ts",
+        "request_contains_non_text_content",
+        "request_image_block_count",
+        "request_video_block_count",
+        "request_tool_call_block_count",
+        "request_tool_result_block_count",
+        "request_thinking_block_count",
+        "response_contains_non_text_content",
+        "response_image_block_count",
+        "response_video_block_count",
+        "response_tool_call_block_count",
+        "response_tool_result_block_count",
+        "response_thinking_block_count",
+        "request_truncated",
+        "response_truncated",
+        "lossy_source",
+        "lossy_reasons"
+      ],
+      "properties": {
+        "endpoint": { "type": "string" },
+        "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "ts": { "type": "string" },
+        "key": { "type": "string" },
+        "source": { "type": "string" },
+        "requested_model": { "type": ["string", "null"] },
+        "actual_model": { "type": ["string", "null"] },
+        "stream": { "type": "boolean" },
+        "thinking_level": { "type": ["string", "null"] },
+        "reasoning_summary_mode": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "$ref": "#/$defs/JsonValue" } },
+            { "$ref": "#/$defs/JsonObject" }
+          ]
+        },
+        "thinking_type": { "type": ["string", "null"] },
+        "thinking_budget_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "max_output_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "tool_spec_count": { "type": "integer", "minimum": 0 },
+        "tool_choice": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "$ref": "#/$defs/JsonValue" } },
+            { "$ref": "#/$defs/JsonObject" }
+          ]
+        },
+        "request_contains_non_text_content": { "type": "boolean", "default": false },
+        "request_image_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "request_video_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "request_tool_call_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "request_tool_result_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "request_thinking_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "response_contains_non_text_content": { "type": "boolean", "default": false },
+        "response_image_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "response_video_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "response_tool_call_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "response_tool_result_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "response_thinking_block_count": { "type": "integer", "minimum": 0, "default": 0 },
+        "request_truncated": { "type": "boolean", "default": false },
+        "response_truncated": { "type": "boolean", "default": false },
+        "lossy_source": { "type": "boolean", "default": false },
+        "lossy_reasons": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "dataset_label": { "type": "string" },
+        "dataset_source_system": { "type": "string" },
+        "dataset_source_bucket": { "type": "string" },
+        "dataset_source_file": { "type": "string" },
+        "dataset_has_reasoning": { "type": "boolean" },
+        "dataset_reasoning_chars": { "type": "integer", "minimum": 0 },
+        "roundtrip": { "$ref": "#/$defs/Roundtrip" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "lossy_source": { "const": true }
+            },
+            "required": ["lossy_source"]
+          },
+          "then": {
+            "properties": {
+              "lossy_reasons": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "AgenticLabel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string" },
+        "tool_call_count": { "type": "integer", "minimum": 0 },
+        "tool_message_count": { "type": "integer", "minimum": 0 },
+        "dialogue_rounds_est": { "type": "integer", "minimum": 0 },
+        "reasoning_chars": { "type": "integer", "minimum": 0 },
+        "has_reasoning": { "type": "boolean" },
+        "lossy_source": { "type": "boolean" },
+        "lossy_reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
