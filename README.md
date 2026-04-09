@@ -49,10 +49,10 @@ The CLI will:
   - full agent traces
   - usually produces `agent_only`
 - `claude`
-  - prompt history only for now
-  - produces `prompt_only`
+  - reconstructs main session traces from Claude project JSONL
+  - can produce `prompt_only`, `agent_only`, or `cot_eligible`
 
-Claude is intentionally low-fidelity right now. It is not treated as a full assistant/tool trace source.
+Claude session reconstruction is still lossy in some cases. The current importer can hydrate sidecar `tool-results/` payloads and append `subagents/` transcripts in call order, but it does not yet perform exact subagent-thread matching or exhaustive sidecar/media reconstruction.
 
 ## Default output
 
