@@ -28,6 +28,10 @@ export async function collectPiRecords(root: string): Promise<Qwen35Record[]> {
     for (const leaf of leaves) {
       const pathEntries = branchEntries(leaf, byId);
       const record = buildPiRecord(pathEntries, header, file, leaves.length > 1);
+      if (!record) {
+        console.warn(`[pi] skipped branch without user message ${file}#leaf=${leaf}`);
+        continue;
+      }
       records.push(Qwen35RecordSchema.parse(record));
     }
   }
@@ -46,7 +50,7 @@ function branchEntries(leaf: string, byId: Map<string, PiSessionEntry>): PiSessi
   return ordered.reverse();
 }
 
-function buildPiRecord(entries: PiSessionEntry[], header: Record<string, unknown>, sourceFile: string, branched: boolean): Qwen35Record {
+function buildPiRecord(entries: PiSessionEntry[], header: Record<string, unknown>, sourceFile: string, branched: boolean): Qwen35Record | null {
   const messages: any[] = [];
   const tools = new Map<string, { name: string }>();
   const lossyReasons = new Set<string>();
@@ -108,6 +112,10 @@ function buildPiRecord(entries: PiSessionEntry[], header: Record<string, unknown
   if (branched) lossyReasons.add('session_tree_branch_selected');
   if (new Set(models).size > 1) lossyReasons.add('multiple_models_on_branch');
   if (new Set(thinkingLevels).size > 1) lossyReasons.add('multiple_thinking_levels_on_branch');
+
+  if (!messages.some((message) => message.role === 'user')) {
+    return null;
+  }
 
   const meta = buildMeta(messages, {
     endpoint: 'pi/session_branch',
