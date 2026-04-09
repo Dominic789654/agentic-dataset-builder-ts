@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-dataset-builder.local/schemas/qwen_plain_text.schema.json",
+  "title": "Qwen Plain Text Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["body", "metadata", "text"],
+  "properties": {
+    "body": { "type": "string" },
+    "metadata": { "$ref": "#/$defs/PlainTextMetadata" },
+    "text": {
+      "type": "string",
+      "pattern": "<<<AGENTIC_DATASET_BUILDER_QWEN_PLAINTEXT_METADATA_BEGIN>>>[\\s\\S]*<<<AGENTIC_DATASET_BUILDER_QWEN_PLAINTEXT_METADATA_END>>>\\n?$"
+    }
+  },
+  "$defs": {
+    "PlainTextMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["codec_version", "body_sha256", "qwen_record_json"],
+      "properties": {
+        "codec_version": { "const": "agentic-dataset-builder/qwen-plain-text-v1" },
+        "body_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "qwen_record_json": { "type": "string" }
+      }
+    },
+    "PlainText": {
+      "type": "string",
+      "pattern": "<<<AGENTIC_DATASET_BUILDER_QWEN_PLAINTEXT_METADATA_BEGIN>>>[\\s\\S]*<<<AGENTIC_DATASET_BUILDER_QWEN_PLAINTEXT_METADATA_END>>>\\n?$"
+    }
+  }
+}
