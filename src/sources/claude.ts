@@ -179,6 +179,8 @@ export async function collectClaudePromptOnlyRecords(
 	return records;
 }
 
+export const collectClaudeRecords = collectClaudePromptOnlyRecords;
+
 async function listClaudeMainFiles(root: string): Promise<string[]> {
 	return (
 		await fg("**/*.jsonl", { cwd: root, absolute: true, onlyFiles: true })

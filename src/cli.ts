@@ -4,7 +4,7 @@ import path from 'node:path';
 import { candidateClaudeRoots, candidateCodexRoots, candidatePiRoots, firstExisting } from './platform/paths.js';
 import { collectPiRecords } from './sources/pi.js';
 import { collectCodexRecords } from './sources/codex.js';
-import { collectClaudePromptOnlyRecords } from './sources/claude.js';
+import { collectClaudeRecords } from './sources/claude.js';
 import { labelRecord } from './labeling.js';
 import { Qwen35RecordSchema, type Qwen35Record } from './schemas/qwen35.js';
 import { writeParquet } from './parquet.js';
@@ -20,15 +20,15 @@ interface Args {
 
 function parseArgs(argv: string[]): Args {
   if (argv.includes('--help') || argv.includes('-h')) {
-    console.log(`agentic-dataset-builder@0.2.0
+    console.log(`agentic-dataset-builder@0.2.6
 
 Usage:
-  npx agentic-dataset-builder@0.2.0 --output-root ./out
+  npx agentic-dataset-builder@0.2.6 --output-root ./out
 
 Options:
   --output-root <dir>       Output directory root
-  --include-sources <list>  Comma-separated: pi,codex,claude
-  --include-labels <list>   Comma-separated: cot_eligible,agent_only,prompt_only,discard
+  --include-sources <list>  Comma-separated: pi,codex,claude (default: pi,codex,claude)
+  --include-labels <list>   Comma-separated: cot_eligible,agent_only,prompt_only,discard (default: cot_eligible,agent_only,prompt_only)
   --pi-root <dir>           Override Pi session root
   --codex-root <dir>        Override Codex session root
   --claude-root <dir>       Override Claude project history root
@@ -39,8 +39,8 @@ Options:
 
   const args: Args = {
     outputRoot: './out',
-    includeSources: ['pi', 'codex'],
-    includeLabels: new Set(['cot_eligible', 'agent_only']),
+    includeSources: ['pi', 'codex', 'claude'],
+    includeLabels: new Set(['cot_eligible', 'agent_only', 'prompt_only']),
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -115,7 +115,7 @@ async function main() {
     if (source === 'claude') {
       const root = path.resolve(args.claudeRoot ?? firstExisting(candidateClaudeRoots()));
       logger.log('claude', `reading ${root}`);
-      const records = await collectClaudePromptOnlyRecords(root);
+      const records = await collectClaudeRecords(root);
       sourceStats.claude = { records: records.length };
       for (const record of records) pushLabeled(record, 'claude', args.includeLabels, allRecords);
       logger.log('claude', `kept ${allRecords.filter((r) => r.source_system === 'claude').length} labeled records`);
